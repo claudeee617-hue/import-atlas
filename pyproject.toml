@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "repo-atlas"
+name = "import-atlas"
 version = "0.1.0"
 description = "Turn any codebase into an interactive map of how its files connect. One command, one offline HTML file."
 readme = "README.md"
@@ -22,14 +22,14 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/claudeee617-hue/repo-atlas"
-Issues = "https://github.com/claudeee617-hue/repo-atlas/issues"
+Homepage = "https://github.com/claudeee617-hue/import-atlas"
+Issues = "https://github.com/claudeee617-hue/import-atlas/issues"
 
 [project.scripts]
-repo-atlas = "repo_atlas.cli:main"
+import-atlas = "import_atlas.cli:main"
 
 [tool.setuptools]
-packages = ["repo_atlas"]
+packages = ["import_atlas"]
 
 [tool.setuptools.package-data]
-repo_atlas = ["template.html"]
+import_atlas = ["template.html"]

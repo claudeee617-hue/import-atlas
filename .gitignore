@@ -6,5 +6,5 @@ dist/
 .venv/
 venv/
 .DS_Store
-repo-atlas.html
+import-atlas.html
 atlas.html

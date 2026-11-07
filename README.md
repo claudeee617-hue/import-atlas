@@ -1,13 +1,13 @@
-# repo-atlas
+# import-atlas
 
 **Open any codebase and see how it fits together. One command, one offline HTML file.**
 
 ```bash
-pip install repo-atlas
-repo-atlas . --open
+pip install import-atlas
+import-atlas . --open
 ```
 
-![repo-atlas map of pip: 399 files, two big clusters](docs/overview.png)
+![import-atlas map of pip: 399 files, two big clusters](docs/overview.png)
 
 *The map of [pip](https://github.com/pypa/pip) (399 files, 116k lines), generated in one second. Each dot is a file, size shows how much the rest of the code depends on it, colour is its folder.*
 
@@ -15,13 +15,13 @@ repo-atlas . --open
 
 *Click a file and everything around it lights up: orange arrows go out to what it imports, blue arrows come in from what imports it.*
 
-[Try a live example](https://htmlpreview.github.io/?https://github.com/claudeee617-hue/repo-atlas/blob/main/docs/example-pip.html) (the pip map above, fully interactive).
+[Try a live example](https://htmlpreview.github.io/?https://github.com/claudeee617-hue/import-atlas/blob/main/docs/example-pip.html) (the pip map above, fully interactive).
 
 ## Why
 
 Every new developer asks the same thing: *"This repo has 400 files. Where do I start?"*
 
-`ls` doesn't answer it. Reading `README` doesn't answer it. `repo-atlas` does, by reading the real `import` statements and drawing what they say:
+`ls` doesn't answer it. Reading `README` doesn't answer it. `import-atlas` does, by reading the real `import` statements and drawing what they say:
 
 - **Start here:** the files everything else depends on, and the entry points that reach the most code.
 - **Circular imports:** groups of files that import each other, ready to click through.
@@ -33,11 +33,11 @@ No server, no account, no dependencies. Your code never leaves your machine, and
 ## Usage
 
 ```bash
-repo-atlas                       # map the current folder -> repo-atlas.html
-repo-atlas ~/code/myapp --open   # map another folder and open it
-repo-atlas . --exclude migrations --exclude '*.gen.ts'
-repo-atlas . --json graph.json   # also write the raw graph
-repo-atlas . --fail-on-cycles    # exit 1 if circular imports exist (CI)
+import-atlas                       # map the current folder -> import-atlas.html
+import-atlas ~/code/myapp --open   # map another folder and open it
+import-atlas . --exclude migrations --exclude '*.gen.ts'
+import-atlas . --json graph.json   # also write the raw graph
+import-atlas . --fail-on-cycles    # exit 1 if circular imports exist (CI)
 ```
 
 In the browser: scroll to zoom, drag to pan, click a file, `/` to search, `Esc` to clear, `0` to fit the view, and **Save PNG** to export the map.
@@ -75,17 +75,17 @@ Catch new circular imports before they merge:
 ```yaml
 - uses: actions/setup-python@v5
   with: { python-version: "3.12" }
-- run: pip install repo-atlas
-- run: repo-atlas . --fail-on-cycles -o atlas.html
+- run: pip install import-atlas
+- run: import-atlas . --fail-on-cycles -o atlas.html
 - uses: actions/upload-artifact@v4
-  with: { name: repo-atlas, path: atlas.html }
+  with: { name: import-atlas, path: atlas.html }
 ```
 
 ## Development
 
 ```bash
-git clone https://github.com/claudeee617-hue/repo-atlas
-cd repo-atlas
+git clone https://github.com/claudeee617-hue/import-atlas
+cd import-atlas
 pip install -e .
 python -m unittest discover -s tests
 ```

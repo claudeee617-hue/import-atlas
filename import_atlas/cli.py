@@ -17,12 +17,12 @@ from .scan import scan
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
-        prog="repo-atlas",
+        prog="import-atlas",
         description="Turn any codebase into an interactive map of how its files connect.",
     )
     p.add_argument("path", nargs="?", default=".", help="folder to map (default: .)")
-    p.add_argument("-o", "--output", default="repo-atlas.html",
-                   help="HTML file to write (default: repo-atlas.html)")
+    p.add_argument("-o", "--output", default="import-atlas.html",
+                   help="HTML file to write (default: import-atlas.html)")
     p.add_argument("--open", action="store_true", help="open the map in your browser")
     p.add_argument("--json", metavar="FILE", help="also write the raw graph as JSON")
     p.add_argument("--exclude", action="append", default=[], metavar="PATTERN",

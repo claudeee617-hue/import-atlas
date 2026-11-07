@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>pip · repo-atlas</title>
+<title>pip · import-atlas</title>
 <style>
 :root{
   --bg:#f4f5f7;--panel:#ffffff;--ink:#17202b;--mute:#667085;--line:#e1e5ea;--accent:#2563eb;
@@ -76,7 +76,7 @@ canvas.pt{cursor:pointer}
 <body>
 <aside>
   <div class="pad">
-    <div class="brand"><i></i>repo-atlas</div>
+    <div class="brand"><i></i>import-atlas</div>
     <h1 id="name"></h1>
     <div class="stats" id="stats"></div>
     <div class="note" id="note" hidden></div>
@@ -102,12 +102,12 @@ canvas.pt{cursor:pointer}
   <section class="pad" id="cycSec" hidden><h2>Circular imports</h2><ul id="cyc"></ul></section>
   <section class="pad"><h2 id="legendTitle">Folders</h2><ul class="legend" id="legend"></ul></section>
   <section class="pad" id="extSec" hidden><h2>Most-used packages</h2><div id="ext"></div></section>
-  <footer>Made with <a href="https://github.com/claudeee617-hue/repo-atlas" target="_blank" rel="noopener">repo-atlas</a></footer>
+  <footer>Made with <a href="https://github.com/claudeee617-hue/import-atlas" target="_blank" rel="noopener">import-atlas</a></footer>
 </aside>
 <main>
   <canvas id="cv"></canvas>
   <div id="tip"></div>
-  <div class="empty" id="empty">No supported source files to draw.<br>repo-atlas reads Python, JavaScript/TypeScript and Go.</div>
+  <div class="empty" id="empty">No supported source files to draw.<br>import-atlas reads Python, JavaScript/TypeScript and Go.</div>
   <div class="hint">Scroll to zoom · drag to pan · click a file · Esc to clear</div>
 </main>
 <script>

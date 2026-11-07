@@ -4,10 +4,10 @@ import re
 import tempfile
 import unittest
 
-from repo_atlas.cli import main
-from repo_atlas.graph import build_graph, pagerank, strongly_connected
-from repo_atlas.render import render_html
-from repo_atlas.scan import PyResolver, is_test_path, js_resolve, js_specs, scan
+from import_atlas.cli import main
+from import_atlas.graph import build_graph, pagerank, strongly_connected
+from import_atlas.render import render_html
+from import_atlas.scan import PyResolver, is_test_path, js_resolve, js_specs, scan
 
 
 def make_repo(files):
