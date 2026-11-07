@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pip · repo-atlas</title>
+<style>
+:root{
+  --bg:#f4f5f7;--panel:#ffffff;--ink:#17202b;--mute:#667085;--line:#e1e5ea;--accent:#2563eb;
+  --edge:rgba(70,82,104,.18);--in:#2563eb;--out:#e8590c;--bad:#d92d20;--chip:#eef1f5;--hover:#f0f3f7;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 6px 20px rgba(16,24,40,.08);
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0d1117;--panel:#151b23;--ink:#e6edf3;--mute:#8b98a8;--line:#262e39;--accent:#58a6ff;
+  --edge:rgba(150,168,196,.15);--in:#58a6ff;--out:#ff9b54;--bad:#ff6b6b;--chip:#1f2833;--hover:#1c2430;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.45 var(--sans);display:grid;grid-template-columns:350px 1fr;overflow:hidden}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;display:flex;flex-direction:column;min-height:0}
+.pad{padding:16px 18px}
+.brand{display:flex;align-items:center;gap:8px;color:var(--mute);font-size:12px;letter-spacing:.04em;text-transform:uppercase;font-weight:600}
+.brand i{width:8px;height:8px;border-radius:50%;background:var(--accent);display:inline-block}
+h1{font-size:20px;line-height:1.2;margin:6px 0 4px;word-break:break-word}
+.stats{color:var(--mute);font-size:13px}
+.note{margin-top:8px;padding:8px 10px;background:var(--chip);border-radius:8px;font-size:12px;color:var(--mute)}
+input[type=search]{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;outline:none}
+input[type=search]:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 22%,transparent)}
+.seg{display:flex;background:var(--chip);border-radius:9px;padding:3px;gap:2px}
+.seg button{flex:1;border:0;background:transparent;color:var(--mute);font:inherit;font-size:13px;padding:5px 8px;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--panel);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12);font-weight:600}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mute)}
+.row label{display:flex;gap:6px;align-items:center;cursor:pointer}
+section{border-top:1px solid var(--line)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mute);margin:0 0 8px;font-weight:600}
+ul{list-style:none;margin:0;padding:0}
+li button.item{display:flex;width:100%;text-align:left;gap:8px;align-items:baseline;border:0;background:transparent;color:var(--ink);padding:5px 8px;margin:0 -8px;border-radius:7px;cursor:pointer;font:inherit;width:calc(100% + 16px)}
+li button.item:hover{background:var(--hover)}
+.mono{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.sub{color:var(--mute);font-size:12px;white-space:nowrap}
+.sw{width:10px;height:10px;border-radius:50%;flex:none;display:inline-block;transform:translateY(1px)}
+.chip{display:inline-block;background:var(--chip);border-radius:6px;padding:2px 8px;font-size:12px;color:var(--mute);margin:0 4px 4px 0}
+.chip.bad{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
+.legend li button.item[aria-pressed=false]{opacity:.4}
+.legend .count{margin-left:auto;color:var(--mute);font-size:12px}
+.more{background:none;border:0;color:var(--accent);cursor:pointer;font:inherit;font-size:12px;padding:4px 0}
+#detail .path{font-family:var(--mono);font-size:12px;color:var(--mute);word-break:break-all;margin:2px 0 10px}
+#detail h3{margin:0;font-size:17px;word-break:break-all}
+.close{float:right;background:var(--chip);border:0;color:var(--mute);border-radius:7px;width:26px;height:26px;cursor:pointer;font-size:16px;line-height:1}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:9px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+.btn:hover{background:var(--hover)}
+.spacer{flex:1}
+footer{margin-top:auto;padding:14px 18px;border-top:1px solid var(--line);color:var(--mute);font-size:12px}
+footer a{color:var(--accent);text-decoration:none}
+main{position:relative;min-width:0;min-height:0}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+canvas.drag{cursor:grabbing}
+canvas.pt{cursor:pointer}
+#tip{position:absolute;pointer-events:none;background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:9px;padding:7px 10px;font-size:12px;max-width:340px;display:none;z-index:3}
+#tip b{font-family:var(--mono);font-weight:600;word-break:break-all;display:block;margin-bottom:2px}
+#tip span{color:var(--mute)}
+.hint{position:absolute;left:14px;bottom:12px;font-size:12px;color:var(--mute);background:color-mix(in srgb,var(--panel) 85%,transparent);padding:5px 10px;border-radius:8px;border:1px solid var(--line)}
+.keys{position:absolute;right:14px;top:12px;display:flex;gap:8px}
+.empty{position:absolute;inset:0;display:none;align-items:center;justify-content:center;color:var(--mute);text-align:center;padding:30px}
+@media (max-width:820px){
+  body{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 46vh}
+  main{order:-1}
+  aside{border-right:0;border-top:1px solid var(--line)}
+  .hint{display:none}
+}
+</style>
+</head>
+<body>
+<aside>
+  <div class="pad">
+    <div class="brand"><i></i>repo-atlas</div>
+    <h1 id="name"></h1>
+    <div class="stats" id="stats"></div>
+    <div class="note" id="note" hidden></div>
+  </div>
+  <section class="pad" id="detail" hidden></section>
+  <section class="pad">
+    <input id="q" type="search" placeholder="Search files  ( / )" autocomplete="off" aria-label="Search files">
+    <div style="height:10px"></div>
+    <div class="seg" id="modes" role="group" aria-label="Colour by">
+      <button data-m="group" aria-pressed="true">Folder</button>
+      <button data-m="role" aria-pressed="false">Role</button>
+      <button data-m="lang" aria-pressed="false">Language</button>
+    </div>
+    <div style="height:10px"></div>
+    <div class="row">
+      <label><input type="checkbox" id="tests" checked> Tests</label>
+      <label><input type="checkbox" id="labels" checked> Labels</label>
+      <span class="spacer"></span>
+      <button class="btn" id="save" title="Save the map as an image">Save PNG</button>
+    </div>
+  </section>
+  <section class="pad" id="startSec" hidden><h2>Start here</h2><ul id="start"></ul></section>
+  <section class="pad" id="cycSec" hidden><h2>Circular imports</h2><ul id="cyc"></ul></section>
+  <section class="pad"><h2 id="legendTitle">Folders</h2><ul class="legend" id="legend"></ul></section>
+  <section class="pad" id="extSec" hidden><h2>Most-used packages</h2><div id="ext"></div></section>
+  <footer>Made with <a href="https://github.com/claudeee617-hue/repo-atlas" target="_blank" rel="noopener">repo-atlas</a></footer>
+</aside>
+<main>
+  <canvas id="cv"></canvas>
+  <div id="tip"></div>
+  <div class="empty" id="empty">No supported source files to draw.<br>repo-atlas reads Python, JavaScript/TypeScript and Go.</div>
+  <div class="hint">Scroll to zoom · drag to pan · click a file · Esc to clear</div>
+</main>
+<script>
+const D = {"name":"pip","nodes":[{"p":"__init__.py","l":0,"n":8,"g":2,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"__main__.py","l":0,"n":20,"g":2,"t":0,"r":"leaf","k":0.0738,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"__pip-runner__.py","l":0,"n":33,"g":2,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/__init__.py","l":0,"n":12,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cache.py","l":0,"n":243,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/configuration.py","l":0,"n":324,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/exceptions.py","l":0,"n":911,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/main.py","l":0,"n":8,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/pyproject.py","l":0,"n":100,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/self_outdated_check.py","l":0,"n":200,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/wheel_builder.py","l":0,"n":233,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/build_env/__init__.py","l":0,"n":23,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/build_env/base.py","l":0,"n":84,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/build_env/installer.py","l":0,"n":296,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/build_env/noop.py","l":0,"n":32,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/build_env/venv.py","l":0,"n":127,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/build_env/virtual.py","l":0,"n":117,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/__init__.py","l":0,"n":2,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/cli/autocompletion.py","l":0,"n":166,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/base_command.py","l":0,"n":217,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/cmdoptions.py","l":0,"n":1205,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/command_context.py","l":0,"n":21,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/cli/index_command.py","l":0,"n":173,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/main.py","l":0,"n":69,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/main_parser.py","l":0,"n":105,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/parser.py","l":0,"n":305,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/progress_bars.py","l":0,"n":132,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/req_command.py","l":0,"n":447,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/spinners.py","l":0,"n":193,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/cli/status_codes.py","l":0,"n":7,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/commands/__init__.py","l":0,"n":126,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/cache.py","l":0,"n":209,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/check.py","l":0,"n":58,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/completion.py","l":0,"n":127,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/configuration.py","l":0,"n":243,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/debug.py","l":0,"n":151,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/download.py","l":0,"n":121,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/freeze.py","l":0,"n":90,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/hash.py","l":0,"n":47,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/help.py","l":0,"n":29,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/index.py","l":0,"n":139,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/inspect.py","l":0,"n":83,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/install.py","l":0,"n":792,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/list.py","l":0,"n":344,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/lock.py","l":0,"n":142,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/search.py","l":0,"n":145,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/show.py","l":0,"n":204,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/uninstall.py","l":0,"n":99,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/commands/wheel.py","l":0,"n":146,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/distributions/__init__.py","l":0,"n":17,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/distributions/base.py","l":0,"n":42,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/distributions/installed.py","l":0,"n":25,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/distributions/sdist.py","l":0,"n":173,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/distributions/wheel.py","l":0,"n":35,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/index/__init__.py","l":0,"n":1,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/index/collector.py","l":0,"n":423,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/index/package_finder.py","l":0,"n":991,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/index/sources.py","l":0,"n":227,"g":1,"t":0,"r":"leaf","k":0.0738,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/locations/__init__.py","l":0,"n":358,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":3,"c":-1,"x":["distutils","pip"]},{"p":"_internal/locations/_distutils.py","l":0,"n":148,"g":1,"t":0,"r":"module","k":0.0512,"i":1,"o":1,"c":-1,"x":["distutils","pip"]},{"p":"_internal/locations/_sysconfig.py","l":0,"n":179,"g":1,"t":0,"r":"module","k":0.0512,"i":1,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/locations/base.py","l":0,"n":63,"g":1,"t":0,"r":"leaf","k":0.1383,"i":3,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/metadata/__init__.py","l":0,"n":128,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":3,"c":-1,"x":["pip"]},{"p":"_internal/metadata/_json.py","l":0,"n":77,"g":1,"t":0,"r":"leaf","k":0.1204,"i":1,"o":0,"c":-1,"x":[]},{"p":"_internal/metadata/base.py","l":0,"n":567,"g":1,"t":0,"r":"module","k":0.0947,"i":2,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/metadata/pkg_resources.py","l":0,"n":246,"g":1,"t":0,"r":"module","k":0.0512,"i":1,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/metadata/importlib/__init__.py","l":0,"n":4,"g":1,"t":0,"r":"module","k":0.0512,"i":1,"o":2,"c":-1,"x":[]},{"p":"_internal/metadata/importlib/_compat.py","l":0,"n":63,"g":1,"t":0,"r":"leaf","k":0.1408,"i":2,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/metadata/importlib/_dists.py","l":0,"n":204,"g":1,"t":0,"r":"module","k":0.0879,"i":2,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/metadata/importlib/_envs.py","l":0,"n":123,"g":1,"t":0,"r":"module","k":0.0617,"i":1,"o":2,"c":-1,"x":["pip"]},{"p":"_internal/models/__init__.py","l":0,"n":1,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/models/candidate.py","l":0,"n":20,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/direct_url.py","l":0,"n":32,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/format_control.py","l":0,"n":64,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/index.py","l":0,"n":20,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/models/installation_report.py","l":0,"n":51,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/link.py","l":0,"n":539,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/release_control.py","l":0,"n":77,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/scheme.py","l":0,"n":17,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/models/search_scope.py","l":0,"n":105,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/selection_prefs.py","l":0,"n":30,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/target_python.py","l":0,"n":102,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/models/wheel.py","l":0,"n":60,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/network/__init__.py","l":0,"n":1,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/network/auth.py","l":0,"n":478,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["keyring","pip"]},{"p":"_internal/network/cache.py","l":0,"n":103,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/network/download.py","l":0,"n":331,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/network/lazy_wheel.py","l":0,"n":177,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/network/session.py","l":0,"n":453,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/network/utils.py","l":0,"n":181,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/network/xmlrpc.py","l":0,"n":52,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["_typeshed","pip"]},{"p":"_internal/operations/__init__.py","l":0,"n":0,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/operations/check.py","l":0,"n":135,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/operations/freeze.py","l":0,"n":228,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/operations/prepare.py","l":0,"n":786,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/operations/install/__init__.py","l":0,"n":1,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/operations/install/wheel.py","l":0,"n":643,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/__init__.py","l":0,"n":85,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":3,"c":-1,"x":["pip"]},{"p":"_internal/req/constructors.py","l":0,"n":573,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/pep723.py","l":0,"n":31,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/req_dependency_group.py","l":0,"n":71,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/req_file.py","l":0,"n":520,"g":1,"t":0,"r":"leaf","k":0.0512,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/req_install.py","l":0,"n":737,"g":1,"t":0,"r":"leaf","k":0.0512,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/req_set.py","l":0,"n":60,"g":1,"t":0,"r":"leaf","k":0.0512,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/req/req_uninstall.py","l":0,"n":539,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/resolution/__init__.py","l":0,"n":0,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/resolution/base.py","l":0,"n":15,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/resolution/legacy/__init__.py","l":0,"n":0,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/resolution/legacy/resolver.py","l":0,"n":517,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/resolution/resolvelib/__init__.py","l":0,"n":0,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/resolution/resolvelib/base.py","l":0,"n":128,"g":1,"t":0,"r":"hub","k":0.2576,"i":7,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/resolution/resolvelib/candidates.py","l":0,"n":497,"g":1,"t":0,"r":"module","k":0.0684,"i":2,"o":2,"c":4,"x":["pip"]},{"p":"_internal/resolution/resolvelib/factory.py","l":0,"n":813,"g":1,"t":0,"r":"module","k":0.0944,"i":3,"o":4,"c":4,"x":["pip"]},{"p":"_internal/resolution/resolvelib/found_candidates.py","l":0,"n":137,"g":1,"t":0,"r":"module","k":0.06,"i":1,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/resolution/resolvelib/provider.py","l":0,"n":265,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":4,"c":-1,"x":["pip"]},{"p":"_internal/resolution/resolvelib/reporter.py","l":0,"n":76,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/resolution/resolvelib/requirements.py","l":0,"n":187,"g":1,"t":0,"r":"module","k":0.0684,"i":2,"o":1,"c":-1,"x":["pip"]},{"p":"_internal/resolution/resolvelib/resolver.py","l":0,"n":292,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":2,"c":-1,"x":["pip"]},{"p":"_internal/utils/__init__.py","l":0,"n":0,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/utils/_jaraco_text.py","l":0,"n":83,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/utils/_log.py","l":0,"n":25,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/utils/appdirs.py","l":0,"n":36,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/compat.py","l":0,"n":67,"g":1,"t":0,"r":"leaf","k":0.0738,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/compatibility_tags.py","l":0,"n":168,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/datetime.py","l":0,"n":21,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/utils/deprecation.py","l":0,"n":121,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/direct_url_helpers.py","l":0,"n":85,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/egg_link.py","l":0,"n":67,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/entrypoints.py","l":0,"n":73,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/filesystem.py","l":0,"n":160,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/filetypes.py","l":0,"n":20,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/glibc.py","l":0,"n":87,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/utils/hashes.py","l":0,"n":115,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/logging.py","l":0,"n":343,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/misc.py","l":0,"n":652,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/packaging.py","l":0,"n":33,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/pylock.py","l":0,"n":264,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/retry.py","l":0,"n":35,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["typing_extensions"]},{"p":"_internal/utils/subprocess.py","l":0,"n":225,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/temp_dir.py","l":0,"n":238,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/unpacking.py","l":0,"n":355,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/utils/urls.py","l":0,"n":46,"g":1,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_internal/utils/virtualenv.py","l":0,"n":54,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_internal/utils/wheel.py","l":0,"n":97,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/vcs/__init__.py","l":0,"n":15,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/vcs/bazaar.py","l":0,"n":112,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/vcs/git.py","l":0,"n":496,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/vcs/mercurial.py","l":0,"n":165,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/vcs/subversion.py","l":0,"n":287,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_internal/vcs/versioncontrol.py","l":0,"n":585,"g":1,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/__init__.py","l":0,"n":107,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/cachecontrol/__init__.py","l":0,"n":24,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/_cmd.py","l":0,"n":50,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/adapter.py","l":0,"n":139,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/cache.py","l":0,"n":54,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/cachecontrol/controller.py","l":0,"n":429,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/filewrapper.py","l":0,"n":99,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/cachecontrol/heuristics.py","l":0,"n":120,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/serialize.py","l":0,"n":122,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/wrapper.py","l":0,"n":36,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/caches/__init__.py","l":0,"n":6,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/cachecontrol/caches/file_cache.py","l":0,"n":117,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["filelock","pip"]},{"p":"_vendor/cachecontrol/caches/redis_cache.py","l":0,"n":37,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip","redis"]},{"p":"_vendor/certifi/__init__.py","l":0,"n":3,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/certifi/__main__.py","l":0,"n":9,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/certifi/core.py","l":0,"n":68,"g":0,"t":0,"r":"leaf","k":0.0738,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/distlib/__init__.py","l":0,"n":22,"g":0,"t":0,"r":"leaf","k":0.0982,"i":3,"o":0,"c":-1,"x":[]},{"p":"_vendor/distlib/compat.py","l":0,"n":931,"g":0,"t":0,"r":"leaf","k":0.0777,"i":2,"o":0,"c":-1,"x":["ConfigParser","HTMLParser","Queue","StringIO","__builtin__","_abcoll","cgi","dummy_thread","htmlentitydefs","httplib","thread","urllib2"]},{"p":"_vendor/distlib/resources.py","l":0,"n":304,"g":0,"t":0,"r":"module","k":0.0484,"i":1,"o":2,"c":-1,"x":[]},{"p":"_vendor/distlib/scripts.py","l":0,"n":403,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":4,"c":-1,"x":["java"]},{"p":"_vendor/distlib/util.py","l":0,"n":1723,"g":0,"t":0,"r":"module","k":0.0689,"i":2,"o":2,"c":-1,"x":["distutils","dummy_threading"]},{"p":"_vendor/distro/__init__.py","l":0,"n":52,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/distro/__main__.py","l":0,"n":3,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/distro/distro.py","l":0,"n":1129,"g":0,"t":0,"r":"leaf","k":0.1077,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/idna/__init__.py","l":0,"n":44,"g":0,"t":0,"r":"module","k":0.0608,"i":1,"o":3,"c":-1,"x":[]},{"p":"_vendor/idna/__main__.py","l":0,"n":4,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/idna/cli.py","l":0,"n":107,"g":0,"t":0,"r":"module","k":0.0738,"i":1,"o":3,"c":-1,"x":[]},{"p":"_vendor/idna/codec.py","l":0,"n":119,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/idna/compat.py","l":0,"n":28,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/idna/core.py","l":0,"n":537,"g":0,"t":0,"r":"module","k":0.1459,"i":4,"o":3,"c":-1,"x":[]},{"p":"_vendor/idna/idnadata.py","l":0,"n":1891,"g":0,"t":0,"r":"leaf","k":0.0812,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/idna/intranges.py","l":0,"n":43,"g":0,"t":0,"r":"leaf","k":0.0985,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/idna/package_data.py","l":0,"n":1,"g":0,"t":0,"r":"leaf","k":0.0781,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/idna/uts46data.py","l":0,"n":16889,"g":0,"t":0,"r":"leaf","k":0.0812,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/msgpack/__init__.py","l":0,"n":39,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":3,"c":-1,"x":[]},{"p":"_vendor/msgpack/exceptions.py","l":0,"n":30,"g":0,"t":0,"r":"leaf","k":0.073,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/msgpack/ext.py","l":0,"n":135,"g":0,"t":0,"r":"leaf","k":0.073,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/msgpack/fallback.py","l":0,"n":816,"g":0,"t":0,"r":"module","k":0.0512,"i":1,"o":2,"c":-1,"x":["__pypy__"]},{"p":"_vendor/packaging/__init__.py","l":0,"n":11,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/packaging/_elffile.py","l":0,"n":87,"g":0,"t":0,"r":"leaf","k":0.1872,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/packaging/_manylinux.py","l":0,"n":222,"g":0,"t":0,"r":"module","k":0.0867,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/packaging/_musllinux.py","l":0,"n":65,"g":0,"t":0,"r":"module","k":0.0867,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/packaging/_parser.py","l":0,"n":306,"g":0,"t":0,"r":"module","k":0.0627,"i":2,"o":1,"c":-1,"x":[]},{"p":"_vendor/packaging/_structures.py","l":0,"n":22,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/packaging/_tokenizer.py","l":0,"n":162,"g":0,"t":0,"r":"module","k":0.116,"i":3,"o":1,"c":-1,"x":[]},{"p":"_vendor/packaging/dependency_groups.py","l":0,"n":236,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":2,"c":-1,"x":[]},{"p":"_vendor/packaging/direct_url.py","l":0,"n":270,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/packaging/errors.py","l":0,"n":70,"g":0,"t":0,"r":"leaf","k":0.0625,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/packaging/markers.py","l":0,"n":394,"g":0,"t":0,"r":"module","k":0.0573,"i":2,"o":4,"c":-1,"x":[]},{"p":"_vendor/packaging/metadata.py","l":0,"n":848,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":6,"c":-1,"x":[]},{"p":"_vendor/packaging/pylock.py","l":0,"n":783,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":5,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/packaging/requirements.py","l":0,"n":101,"g":0,"t":0,"r":"module","k":0.0625,"i":2,"o":5,"c":-1,"x":[]},{"p":"_vendor/packaging/specifiers.py","l":0,"n":1601,"g":0,"t":0,"r":"hub","k":0.1738,"i":5,"o":2,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/packaging/tags.py","l":0,"n":765,"g":0,"t":0,"r":"module","k":0.11,"i":2,"o":2,"c":-1,"x":[]},{"p":"_vendor/packaging/utils.py","l":0,"n":240,"g":0,"t":0,"r":"hub","k":0.149,"i":5,"o":2,"c":-1,"x":[]},{"p":"_vendor/packaging/version.py","l":0,"n":1016,"g":0,"t":0,"r":"leaf","k":0.1895,"i":4,"o":0,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/packaging/licenses/__init__.py","l":0,"n":158,"g":0,"t":0,"r":"module","k":0.0456,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/packaging/licenses/_spdx.py","l":0,"n":791,"g":0,"t":0,"r":"leaf","k":0.0786,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/pkg_resources/__init__.py","l":0,"n":3008,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":["_typeshed","pip","typing_extensions"]},{"p":"_vendor/platformdirs/__init__.py","l":0,"n":739,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":2,"c":-1,"x":["pip"]},{"p":"_vendor/platformdirs/__main__.py","l":0,"n":54,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/platformdirs/_xdg.py","l":0,"n":141,"g":0,"t":0,"r":"module","k":0.0738,"i":2,"o":1,"c":-1,"x":[]},{"p":"_vendor/platformdirs/android.py","l":0,"n":239,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":["jnius"]},{"p":"_vendor/platformdirs/api.py","l":0,"n":365,"g":0,"t":0,"r":"hub","k":0.2214,"i":6,"o":0,"c":-1,"x":[]},{"p":"_vendor/platformdirs/macos.py","l":0,"n":172,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":2,"c":-1,"x":[]},{"p":"_vendor/platformdirs/unix.py","l":0,"n":244,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":2,"c":-1,"x":[]},{"p":"_vendor/platformdirs/version.py","l":0,"n":20,"g":0,"t":0,"r":"leaf","k":0.0569,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/platformdirs/windows.py","l":0,"n":315,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/pygments/__init__.py","l":0,"n":67,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/__main__.py","l":0,"n":13,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/console.py","l":0,"n":54,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/filter.py","l":0,"n":55,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/formatter.py","l":0,"n":102,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/lexer.py","l":0,"n":819,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/modeline.py","l":0,"n":32,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/plugin.py","l":0,"n":51,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/regexopt.py","l":0,"n":88,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/scanner.py","l":0,"n":89,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/sphinxext.py","l":0,"n":198,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["docutils","pip","sphinx"]},{"p":"_vendor/pygments/style.py","l":0,"n":174,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/token.py","l":0,"n":177,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/unistring.py","l":0,"n":100,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/util.py","l":0,"n":268,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/filters/__init__.py","l":0,"n":861,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/formatters/__init__.py","l":0,"n":126,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/formatters/_mapping.py","l":0,"n":22,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/lexers/__init__.py","l":0,"n":297,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/lexers/_mapping.py","l":0,"n":602,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pygments/lexers/python.py","l":0,"n":1132,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/styles/__init__.py","l":0,"n":50,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/pygments/styles/_mapping.py","l":0,"n":53,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/pyproject_hooks/__init__.py","l":0,"n":25,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/pyproject_hooks/_impl.py","l":0,"n":336,"g":0,"t":0,"r":"module","k":0.0738,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/pyproject_hooks/_in_process/__init__.py","l":0,"n":16,"g":0,"t":0,"r":"leaf","k":0.1027,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/pyproject_hooks/_in_process/_in_process.py","l":0,"n":304,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/requests/__init__.py","l":0,"n":180,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":8,"c":-1,"x":["cryptography","pip"]},{"p":"_vendor/requests/__version__.py","l":0,"n":13,"g":0,"t":0,"r":"leaf","k":0.0862,"i":3,"o":0,"c":-1,"x":[]},{"p":"_vendor/requests/_internal_utils.py","l":0,"n":40,"g":0,"t":0,"r":"hub","k":0.1096,"i":5,"o":1,"c":-1,"x":[]},{"p":"_vendor/requests/_types.py","l":0,"n":145,"g":0,"t":0,"r":"hub","k":0.1376,"i":7,"o":4,"c":2,"x":["typing_extensions"]},{"p":"_vendor/requests/adapters.py","l":0,"n":634,"g":0,"t":0,"r":"module","k":0.0597,"i":2,"o":8,"c":2,"x":["pip"]},{"p":"_vendor/requests/api.py","l":0,"n":139,"g":0,"t":0,"r":"module","k":0.0441,"i":1,"o":3,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/requests/auth.py","l":0,"n":283,"g":0,"t":0,"r":"module","k":0.0953,"i":4,"o":5,"c":2,"x":[]},{"p":"_vendor/requests/certs.py","l":0,"n":13,"g":0,"t":0,"r":"leaf","k":0.0481,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/requests/compat.py","l":0,"n":77,"g":0,"t":0,"r":"hub","k":0.4141,"i":10,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/requests/cookies.py","l":0,"n":503,"g":0,"t":0,"r":"hub","k":0.1197,"i":6,"o":4,"c":2,"x":["_typeshed"]},{"p":"_vendor/requests/exceptions.py","l":0,"n":98,"g":0,"t":0,"r":"hub","k":0.0785,"i":5,"o":2,"c":2,"x":["pip"]},{"p":"_vendor/requests/help.py","l":0,"n":105,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":["OpenSSL","cryptography","pip"]},{"p":"_vendor/requests/hooks.py","l":0,"n":35,"g":0,"t":0,"r":"module","k":0.0597,"i":2,"o":2,"c":2,"x":[]},{"p":"_vendor/requests/models.py","l":0,"n":984,"g":0,"t":0,"r":"hub","k":0.2048,"i":10,"o":11,"c":2,"x":["pip","typing_extensions"]},{"p":"_vendor/requests/packages.py","l":0,"n":21,"g":0,"t":0,"r":"module","k":0.0441,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/requests/sessions.py","l":0,"n":758,"g":0,"t":0,"r":"module","k":0.0567,"i":2,"o":12,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/requests/status_codes.py","l":0,"n":116,"g":0,"t":0,"r":"module","k":0.064,"i":3,"o":1,"c":-1,"x":[]},{"p":"_vendor/requests/structures.py","l":0,"n":96,"g":0,"t":0,"r":"hub","k":0.1579,"i":6,"o":1,"c":-1,"x":[]},{"p":"_vendor/requests/utils.py","l":0,"n":915,"g":0,"t":0,"r":"hub","k":0.0865,"i":5,"o":9,"c":2,"x":["pip"]},{"p":"_vendor/resolvelib/__init__.py","l":0,"n":24,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":3,"c":-1,"x":[]},{"p":"_vendor/resolvelib/providers.py","l":0,"n":162,"g":0,"t":0,"r":"module","k":0.0719,"i":3,"o":1,"c":-1,"x":[]},{"p":"_vendor/resolvelib/reporters.py","l":0,"n":38,"g":0,"t":0,"r":"module","k":0.0719,"i":3,"o":2,"c":3,"x":[]},{"p":"_vendor/resolvelib/structs.py","l":0,"n":160,"g":0,"t":0,"r":"hub","k":1.0,"i":7,"o":1,"c":5,"x":[]},{"p":"_vendor/resolvelib/resolvers/__init__.py","l":0,"n":26,"g":0,"t":0,"r":"module","k":0.0818,"i":2,"o":5,"c":3,"x":[]},{"p":"_vendor/resolvelib/resolvers/abstract.py","l":0,"n":34,"g":0,"t":0,"r":"module","k":0.0614,"i":2,"o":4,"c":3,"x":[]},{"p":"_vendor/resolvelib/resolvers/criterion.py","l":0,"n":37,"g":0,"t":0,"r":"hub","k":0.9505,"i":5,"o":1,"c":5,"x":[]},{"p":"_vendor/resolvelib/resolvers/exceptions.py","l":0,"n":39,"g":0,"t":0,"r":"module","k":0.0614,"i":2,"o":2,"c":-1,"x":[]},{"p":"_vendor/resolvelib/resolvers/resolution.py","l":0,"n":538,"g":0,"t":0,"r":"module","k":0.0538,"i":1,"o":6,"c":3,"x":[]},{"p":"_vendor/rich/__init__.py","l":0,"n":145,"g":0,"t":0,"r":"hub","k":0.1289,"i":6,"o":2,"c":0,"x":["pip"]},{"p":"_vendor/rich/__main__.py","l":0,"n":216,"g":0,"t":0,"r":"leaf","k":0.0644,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/_cell_widths.py","l":0,"n":453,"g":0,"t":0,"r":"leaf","k":0.1873,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_emoji_codes.py","l":0,"n":3610,"g":0,"t":0,"r":"leaf","k":0.1228,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_emoji_replace.py","l":0,"n":25,"g":0,"t":0,"r":"module","k":0.0829,"i":3,"o":1,"c":-1,"x":[]},{"p":"_vendor/rich/_export_format.py","l":0,"n":68,"g":0,"t":0,"r":"leaf","k":0.0576,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_extension.py","l":0,"n":7,"g":0,"t":0,"r":"leaf","k":0.0947,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/_fileno.py","l":0,"n":19,"g":0,"t":0,"r":"leaf","k":0.0576,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_inspect.py","l":0,"n":230,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":8,"c":-1,"x":[]},{"p":"_vendor/rich/_log_render.py","l":0,"n":81,"g":0,"t":0,"r":"module","k":0.0632,"i":2,"o":4,"c":0,"x":["pip"]},{"p":"_vendor/rich/_loop.py","l":0,"n":36,"g":0,"t":0,"r":"hub","k":0.1321,"i":10,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_null_file.py","l":0,"n":47,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_palettes.py","l":0,"n":304,"g":0,"t":0,"r":"module","k":0.0593,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/rich/_pick.py","l":0,"n":13,"g":0,"t":0,"r":"leaf","k":0.0708,"i":3,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_ratio.py","l":0,"n":129,"g":0,"t":0,"r":"leaf","k":0.0498,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_spinners.py","l":0,"n":481,"g":0,"t":0,"r":"leaf","k":0.0462,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_stack.py","l":0,"n":11,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_timer.py","l":0,"n":14,"g":0,"t":0,"r":"leaf","k":0.0464,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/_win32_console.py","l":0,"n":529,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/_windows.py","l":0,"n":56,"g":0,"t":0,"r":"leaf","k":0.0576,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/_windows_renderer.py","l":0,"n":52,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/_wrap.py","l":0,"n":76,"g":0,"t":0,"r":"module","k":0.0576,"i":1,"o":3,"c":0,"x":[]},{"p":"_vendor/rich/abc.py","l":0,"n":22,"g":0,"t":0,"r":"leaf","k":0.0466,"i":1,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/align.py","l":0,"n":270,"g":0,"t":0,"r":"hub","k":0.1086,"i":8,"o":6,"c":0,"x":["pip"]},{"p":"_vendor/rich/ansi.py","l":0,"n":208,"g":0,"t":0,"r":"module","k":0.0703,"i":2,"o":4,"c":0,"x":[]},{"p":"_vendor/rich/bar.py","l":0,"n":76,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":6,"c":-1,"x":[]},{"p":"_vendor/rich/box.py","l":0,"n":412,"g":0,"t":0,"r":"module","k":0.0522,"i":2,"o":4,"c":0,"x":["pip"]},{"p":"_vendor/rich/cells.py","l":0,"n":139,"g":0,"t":0,"r":"hub","k":0.1734,"i":8,"o":1,"c":-1,"x":[]},{"p":"_vendor/rich/color.py","l":0,"n":547,"g":0,"t":0,"r":"hub","k":0.1821,"i":6,"o":8,"c":0,"x":[]},{"p":"_vendor/rich/color_triplet.py","l":0,"n":30,"g":0,"t":0,"r":"leaf","k":0.321,"i":4,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/columns.py","l":0,"n":167,"g":0,"t":0,"r":"module","k":0.0444,"i":1,"o":8,"c":0,"x":[]},{"p":"_vendor/rich/console.py","l":0,"n":2301,"g":0,"t":0,"r":"hub","k":0.6448,"i":40,"o":31,"c":0,"x":["pip"]},{"p":"_vendor/rich/constrain.py","l":0,"n":29,"g":0,"t":0,"r":"module","k":0.0645,"i":3,"o":3,"c":0,"x":[]},{"p":"_vendor/rich/containers.py","l":0,"n":139,"g":0,"t":0,"r":"module","k":0.071,"i":2,"o":4,"c":0,"x":[]},{"p":"_vendor/rich/control.py","l":0,"n":176,"g":0,"t":0,"r":"hub","k":0.0908,"i":5,"o":2,"c":0,"x":["pip"]},{"p":"_vendor/rich/default_styles.py","l":0,"n":184,"g":0,"t":0,"r":"module","k":0.1012,"i":2,"o":1,"c":0,"x":["pip"]},{"p":"_vendor/rich/diagnose.py","l":0,"n":32,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/emoji.py","l":0,"n":66,"g":0,"t":0,"r":"module","k":0.0881,"i":3,"o":6,"c":0,"x":["pip"]},{"p":"_vendor/rich/errors.py","l":0,"n":18,"g":0,"t":0,"r":"hub","k":0.229,"i":5,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/file_proxy.py","l":0,"n":47,"g":0,"t":0,"r":"module","k":0.0449,"i":1,"o":3,"c":0,"x":[]},{"p":"_vendor/rich/filesize.py","l":0,"n":70,"g":0,"t":0,"r":"leaf","k":0.0423,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/highlighter.py","l":0,"n":188,"g":0,"t":0,"r":"hub","k":0.1102,"i":9,"o":2,"c":0,"x":[]},{"p":"_vendor/rich/json.py","l":0,"n":123,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":2,"c":-1,"x":["pip"]},{"p":"_vendor/rich/jupyter.py","l":0,"n":79,"g":0,"t":0,"r":"hub","k":0.2046,"i":19,"o":3,"c":0,"x":["IPython","pip"]},{"p":"_vendor/rich/layout.py","l":0,"n":358,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":10,"c":-1,"x":["pip"]},{"p":"_vendor/rich/live.py","l":0,"n":348,"g":0,"t":0,"r":"module","k":0.0761,"i":4,"o":13,"c":0,"x":["IPython","ipywidgets","typing_extensions"]},{"p":"_vendor/rich/live_render.py","l":0,"n":90,"g":0,"t":0,"r":"module","k":0.0449,"i":1,"o":6,"c":0,"x":[]},{"p":"_vendor/rich/logging.py","l":0,"n":265,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":6,"c":-1,"x":["pip"]},{"p":"_vendor/rich/markup.py","l":0,"n":204,"g":0,"t":0,"r":"module","k":0.0753,"i":2,"o":5,"c":0,"x":["pip"]},{"p":"_vendor/rich/measure.py","l":0,"n":126,"g":0,"t":0,"r":"hub","k":0.2054,"i":17,"o":3,"c":0,"x":[]},{"p":"_vendor/rich/padding.py","l":0,"n":121,"g":0,"t":0,"r":"module","k":0.0569,"i":3,"o":5,"c":0,"x":["pip"]},{"p":"_vendor/rich/pager.py","l":0,"n":23,"g":0,"t":0,"r":"module","k":0.0576,"i":1,"o":2,"c":0,"x":[]},{"p":"_vendor/rich/palette.py","l":0,"n":83,"g":0,"t":0,"r":"module","k":0.1875,"i":2,"o":1,"c":-1,"x":["pip"]},{"p":"_vendor/rich/panel.py","l":0,"n":285,"g":0,"t":0,"r":"hub","k":0.0682,"i":6,"o":10,"c":0,"x":[]},{"p":"_vendor/rich/pretty.py","l":0,"n":897,"g":0,"t":0,"r":"hub","k":0.0785,"i":5,"o":10,"c":0,"x":["IPython","attr","pip"]},{"p":"_vendor/rich/progress.py","l":0,"n":1456,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":14,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/rich/progress_bar.py","l":0,"n":194,"g":0,"t":0,"r":"module","k":0.0423,"i":1,"o":7,"c":-1,"x":[]},{"p":"_vendor/rich/prompt.py","l":0,"n":319,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":3,"c":-1,"x":["pip"]},{"p":"_vendor/rich/protocol.py","l":0,"n":32,"g":0,"t":0,"r":"leaf","k":0.1223,"i":3,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/region.py","l":0,"n":7,"g":0,"t":0,"r":"leaf","k":0.061,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/rich/repr.py","l":0,"n":116,"g":0,"t":0,"r":"leaf","k":0.2157,"i":4,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/rich/rule.py","l":0,"n":109,"g":0,"t":0,"r":"module","k":0.065,"i":3,"o":7,"c":0,"x":["pip"]},{"p":"_vendor/rich/scope.py","l":0,"n":73,"g":0,"t":0,"r":"module","k":0.0621,"i":2,"o":6,"c":0,"x":["pip"]},{"p":"_vendor/rich/screen.py","l":0,"n":44,"g":0,"t":0,"r":"module","k":0.0626,"i":2,"o":4,"c":0,"x":["pip"]},{"p":"_vendor/rich/segment.py","l":0,"n":637,"g":0,"t":0,"r":"hub","k":0.2785,"i":17,"o":4,"c":0,"x":["pip"]},{"p":"_vendor/rich/spinner.py","l":0,"n":110,"g":0,"t":0,"r":"module","k":0.0521,"i":2,"o":7,"c":0,"x":[]},{"p":"_vendor/rich/status.py","l":0,"n":113,"g":0,"t":0,"r":"module","k":0.0576,"i":1,"o":5,"c":0,"x":[]},{"p":"_vendor/rich/style.py","l":0,"n":693,"g":0,"t":0,"r":"hub","k":0.4419,"i":26,"o":4,"c":0,"x":[]},{"p":"_vendor/rich/styled.py","l":0,"n":31,"g":0,"t":0,"r":"module","k":0.0624,"i":2,"o":4,"c":0,"x":["pip"]},{"p":"_vendor/rich/syntax.py","l":0,"n":874,"g":0,"t":0,"r":"module","k":0.0518,"i":3,"o":9,"c":0,"x":["pip"]},{"p":"_vendor/rich/table.py","l":0,"n":887,"g":0,"t":0,"r":"hub","k":0.1153,"i":9,"o":15,"c":0,"x":["pip"]},{"p":"_vendor/rich/terminal_theme.py","l":0,"n":143,"g":0,"t":0,"r":"module","k":0.2288,"i":4,"o":2,"c":-1,"x":[]},{"p":"_vendor/rich/text.py","l":0,"n":1168,"g":0,"t":0,"r":"hub","k":0.3119,"i":25,"o":15,"c":0,"x":["pip"]},{"p":"_vendor/rich/theme.py","l":0,"n":91,"g":0,"t":0,"r":"module","k":0.0865,"i":3,"o":2,"c":0,"x":[]},{"p":"_vendor/rich/themes.py","l":0,"n":3,"g":0,"t":0,"r":"module","k":0.0576,"i":1,"o":2,"c":0,"x":[]},{"p":"_vendor/rich/traceback.py","l":0,"n":804,"g":0,"t":0,"r":"module","k":0.0632,"i":2,"o":12,"c":0,"x":["pip"]},{"p":"_vendor/rich/tree.py","l":0,"n":221,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":7,"c":-1,"x":["pip"]},{"p":"_vendor/tomli/__init__.py","l":0,"n":6,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/tomli/_parser.py","l":0,"n":673,"g":0,"t":0,"r":"module","k":0.0738,"i":1,"o":2,"c":-1,"x":[]},{"p":"_vendor/tomli/_re.py","l":0,"n":104,"g":0,"t":0,"r":"module","k":0.0713,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/tomli/_types.py","l":0,"n":8,"g":0,"t":0,"r":"leaf","k":0.1319,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/tomli_w/__init__.py","l":0,"n":3,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":["pip"]},{"p":"_vendor/tomli_w/_writer.py","l":0,"n":193,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/truststore/__init__.py","l":0,"n":29,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":[]},{"p":"_vendor/truststore/_api.py","l":0,"n":275,"g":0,"t":0,"r":"module","k":0.0738,"i":1,"o":4,"c":-1,"x":["pip","typing_extensions"]},{"p":"_vendor/truststore/_macos.py","l":0,"n":480,"g":0,"t":0,"r":"module","k":0.0556,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/truststore/_openssl.py","l":0,"n":59,"g":0,"t":0,"r":"leaf","k":0.0556,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/truststore/_ssl_constants.py","l":0,"n":24,"g":0,"t":0,"r":"leaf","k":0.1501,"i":3,"o":0,"c":-1,"x":[]},{"p":"_vendor/truststore/_windows.py","l":0,"n":484,"g":0,"t":0,"r":"module","k":0.0556,"i":1,"o":1,"c":-1,"x":[]},{"p":"_vendor/urllib3/__init__.py","l":0,"n":173,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":12,"c":-1,"x":[]},{"p":"_vendor/urllib3/_base_connection.py","l":0,"n":138,"g":0,"t":0,"r":"hub","k":0.272,"i":10,"o":4,"c":1,"x":[]},{"p":"_vendor/urllib3/_collections.py","l":0,"n":401,"g":0,"t":0,"r":"hub","k":0.1501,"i":7,"o":0,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/urllib3/_request_methods.py","l":0,"n":221,"g":0,"t":0,"r":"module","k":0.0652,"i":2,"o":4,"c":1,"x":[]},{"p":"_vendor/urllib3/_version.py","l":0,"n":20,"g":0,"t":0,"r":"leaf","k":0.0593,"i":2,"o":0,"c":-1,"x":[]},{"p":"_vendor/urllib3/connection.py","l":0,"n":951,"g":0,"t":0,"r":"hub","k":0.3307,"i":9,"o":17,"c":1,"x":[]},{"p":"_vendor/urllib3/connectionpool.py","l":0,"n":1000,"g":0,"t":0,"r":"hub","k":0.3542,"i":8,"o":14,"c":1,"x":["typing_extensions"]},{"p":"_vendor/urllib3/exceptions.py","l":0,"n":216,"g":0,"t":0,"r":"hub","k":0.789,"i":17,"o":4,"c":1,"x":[]},{"p":"_vendor/urllib3/fields.py","l":0,"n":280,"g":0,"t":0,"r":"leaf","k":0.088,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/urllib3/filepost.py","l":0,"n":65,"g":0,"t":0,"r":"module","k":0.0566,"i":2,"o":1,"c":-1,"x":[]},{"p":"_vendor/urllib3/poolmanager.py","l":0,"n":534,"g":0,"t":0,"r":"module","k":0.0495,"i":2,"o":11,"c":-1,"x":["typing_extensions"]},{"p":"_vendor/urllib3/response.py","l":0,"n":1273,"g":0,"t":0,"r":"hub","k":0.411,"i":11,"o":8,"c":1,"x":["backports","compression"]},{"p":"_vendor/urllib3/contrib/__init__.py","l":0,"n":0,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/urllib3/contrib/pyopenssl.py","l":0,"n":459,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":1,"c":-1,"x":["OpenSSL","cryptography","pip"]},{"p":"_vendor/urllib3/contrib/socks.py","l":0,"n":183,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":5,"c":-1,"x":[]},{"p":"_vendor/urllib3/contrib/emscripten/__init__.py","l":0,"n":13,"g":0,"t":0,"r":"module","k":0.0427,"i":1,"o":2,"c":-1,"x":["pip"]},{"p":"_vendor/urllib3/contrib/emscripten/connection.py","l":0,"n":231,"g":0,"t":0,"r":"module","k":0.0581,"i":1,"o":10,"c":-1,"x":[]},{"p":"_vendor/urllib3/contrib/emscripten/emscripten_fetch_worker.js","l":1,"n":104,"g":0,"t":0,"r":"orphan","k":0.0399,"i":0,"o":0,"c":-1,"x":[]},{"p":"_vendor/urllib3/contrib/emscripten/fetch.py","l":0,"n":605,"g":0,"t":0,"r":"module","k":0.0545,"i":2,"o":2,"c":6,"x":["js","pyodide","typing_extensions"]},{"p":"_vendor/urllib3/contrib/emscripten/request.py","l":0,"n":16,"g":0,"t":0,"r":"module","k":0.0776,"i":3,"o":1,"c":-1,"x":[]},{"p":"_vendor/urllib3/contrib/emscripten/response.py","l":0,"n":241,"g":0,"t":0,"r":"module","k":0.068,"i":2,"o":6,"c":6,"x":[]},{"p":"_vendor/urllib3/http2/__init__.py","l":0,"n":39,"g":0,"t":0,"r":"entry","k":0.0399,"i":0,"o":5,"c":-1,"x":[]},{"p":"_vendor/urllib3/http2/connection.py","l":0,"n":296,"g":0,"t":0,"r":"module","k":0.0467,"i":1,"o":5,"c":-1,"x":["h2"]},{"p":"_vendor/urllib3/http2/probe.py","l":0,"n":71,"g":0,"t":0,"r":"leaf","k":0.0564,"i":1,"o":0,"c":-1,"x":[]},{"p":"_vendor/urllib3/util/__init__.py","l":0,"n":40,"g":0,"t":0,"r":"module","k":0.1408,"i":4,"o":8,"c":1,"x":[]},{"p":"_vendor/urllib3/util/connection.py","l":0,"n":108,"g":0,"t":0,"r":"hub","k":0.1595,"i":6,"o":3,"c":1,"x":[]},{"p":"_vendor/urllib3/util/proxy.py","l":0,"n":34,"g":0,"t":0,"r":"module","k":0.0652,"i":2,"o":2,"c":1,"x":[]},{"p":"_vendor/urllib3/util/request.py","l":0,"n":204,"g":0,"t":0,"r":"module","k":0.0957,"i":4,"o":2,"c":1,"x":["backports","compression"]},{"p":"_vendor/urllib3/util/response.py","l":0,"n":77,"g":0,"t":0,"r":"module","k":0.1151,"i":3,"o":1,"c":1,"x":[]},{"p":"_vendor/urllib3/util/retry.py","l":0,"n":438,"g":0,"t":0,"r":"hub","k":0.304,"i":7,"o":4,"c":1,"x":["typing_extensions"]},{"p":"_vendor/urllib3/util/ssl_.py","l":0,"n":397,"g":0,"t":0,"r":"hub","k":0.1915,"i":5,"o":3,"c":1,"x":[]},{"p":"_vendor/urllib3/util/ssl_match_hostname.py","l":0,"n":128,"g":0,"t":0,"r":"module","k":0.0779,"i":2,"o":1,"c":1,"x":[]},{"p":"_vendor/urllib3/util/ssltransport.py","l":0,"n":221,"g":0,"t":0,"r":"module","k":0.1107,"i":2,"o":2,"c":1,"x":["typing_extensions"]},{"p":"_vendor/urllib3/util/timeout.py","l":0,"n":211,"g":0,"t":0,"r":"hub","k":0.2075,"i":8,"o":1,"c":1,"x":[]},{"p":"_vendor/urllib3/util/url.py","l":0,"n":384,"g":0,"t":0,"r":"hub","k":0.2482,"i":9,"o":2,"c":1,"x":["pip"]},{"p":"_vendor/urllib3/util/util.py","l":0,"n":35,"g":0,"t":0,"r":"hub","k":0.2887,"i":5,"o":0,"c":-1,"x":[]},{"p":"_vendor/urllib3/util/wait.py","l":0,"n":106,"g":0,"t":0,"r":"leaf","k":0.0714,"i":2,"o":0,"c":-1,"x":[]}],"edges":[[55,57],[58,59],[58,60],[58,61],[59,61],[60,61],[62,64],[62,65],[62,66],[64,63],[65,64],[66,68],[66,69],[68,67],[69,67],[69,68],[97,101],[97,102],[97,103],[111,110],[111,112],[112,110],[112,111],[112,113],[112,116],[113,110],[114,110],[114,111],[114,112],[114,116],[115,110],[116,110],[117,110],[117,112],[141,122],[163,165],[168,166],[168,170],[169,166],[169,167],[169,168],[169,170],[170,166],[170,167],[171,173],[172,173],[174,179],[174,181],[174,182],[175,176],[176,174],[176,179],[176,182],[177,179],[178,179],[179,180],[179,181],[179,183],[184,185],[184,186],[184,187],[187,185],[187,186],[190,189],[191,189],[192,194],[194,202],[195,197],[195,201],[198,192],[198,194],[198,202],[198,204],[199,197],[199,201],[199,202],[199,204],[199,205],[199,206],[200,198],[200,202],[200,203],[200,204],[200,205],[201,192],[201,194],[201,198],[201,202],[201,204],[202,204],[202,205],[203,190],[203,191],[204,203],[204,205],[206,207],[208,1],[209,213],[209,216],[211,213],[212,213],[214,211],[214,213],[215,211],[215,213],[217,213],[241,242],[242,243],[245,246],[245,250],[245,255],[245,258],[245,259],[245,260],[245,261],[245,263],[247,253],[248,251],[248,254],[248,258],[248,262],[249,248],[249,251],[249,253],[249,254],[249,255],[249,258],[249,262],[249,263],[250,248],[250,258],[250,260],[251,247],[251,253],[251,254],[251,258],[251,263],[254,247],[254,248],[254,253],[254,258],[255,253],[255,258],[256,246],[257,248],[257,258],[258,247],[258,248],[258,249],[258,251],[258,253],[258,254],[258,255],[258,257],[258,261],[258,262],[258,263],[259,253],[260,247],[260,248],[260,249],[260,251],[260,253],[260,254],[260,255],[260,257],[260,258],[260,261],[260,262],[260,263],[261,262],[262,253],[263,246],[263,247],[263,248],[263,252],[263,253],[263,254],[263,255],[263,258],[263,262],[264,265],[264,266],[264,268],[265,267],[266,267],[266,268],[267,270],[268,267],[268,269],[268,270],[268,271],[268,272],[269,265],[269,266],[269,267],[269,270],[270,267],[271,267],[271,270],[272,265],[272,266],[272,267],[272,269],[272,270],[272,271],[273,279],[273,304],[277,276],[281,304],[281,307],[281,314],[281,316],[281,326],[281,327],[281,343],[281,345],[282,304],[282,306],[282,343],[282,345],[285,325],[294,283],[294,300],[294,304],[296,304],[296,305],[296,316],[296,322],[296,337],[296,340],[297,301],[297,304],[297,340],[297,345],[298,301],[298,304],[298,316],[298,322],[298,337],[298,340],[299,283],[299,304],[299,343],[299,345],[300,275],[301,285],[301,302],[301,304],[301,333],[301,340],[301,343],[301,344],[301,345],[303,296],[303,304],[303,305],[303,316],[303,322],[303,323],[303,343],[303,345],[304,277],[304,278],[304,280],[304,282],[304,292],[304,296],[304,301],[304,307],[304,310],[304,311],[304,314],[304,316],[304,318],[304,321],[304,322],[304,324],[304,327],[304,331],[304,332],[304,334],[304,335],[304,336],[304,337],[304,339],[304,340],[304,341],[304,344],[304,345],[304,346],[304,347],[304,348],[305,304],[305,316],[305,322],[306,300],[306,304],[306,322],[306,345],[307,304],[307,337],[308,340],[310,276],[310,277],[310,304],[310,316],[310,337],[310,340],[312,297],[312,304],[312,345],[314,304],[314,345],[315,314],[315,345],[316,273],[316,337],[316,344],[317,287],[317,296],[317,304],[317,314],[317,326],[317,327],[317,332],[317,333],[317,337],[317,340],[318,273],[318,296],[318,304],[318,307],[318,312],[318,316],[318,319],[318,326],[318,334],[318,336],[318,342],[318,343],[318,345],[319,283],[319,304],[319,307],[319,337],[319,340],[319,345],[320,273],[320,282],[320,304],[320,314],[320,345],[320,348],[321,277],[321,310],[321,311],[321,340],[321,345],[322,304],[322,311],[322,331],[323,304],[323,316],[323,322],[323,337],[323,340],[324,274],[324,304],[325,302],[326,296],[326,299],[326,300],[326,304],[326,316],[326,322],[326,323],[326,337],[326,340],[326,345],[327,273],[327,283],[327,286],[327,295],[327,300],[327,304],[327,314],[327,316],[327,322],[327,345],[328,273],[328,304],[328,313],[328,314],[328,316],[328,318],[328,326],[328,329],[328,334],[328,338],[328,340],[328,342],[328,343],[328,345],[329,301],[329,302],[329,304],[329,316],[329,322],[329,337],[329,340],[330,273],[330,304],[330,345],[334,296],[334,300],[334,304],[334,316],[334,322],[334,340],[334,345],[335,304],[335,314],[335,326],[335,327],[335,343],[335,345],[336,283],[336,304],[336,337],[336,340],[337,300],[337,304],[337,333],[337,340],[338,288],[338,304],[338,318],[338,322],[338,340],[338,343],[338,345],[339,304],[339,316],[339,318],[339,338],[339,340],[340,301],[340,311],[340,333],[340,344],[341,304],[341,322],[341,337],[341,340],[342,283],[342,300],[342,301],[342,304],[342,316],[342,322],[342,337],[342,340],[342,345],[343,283],[343,286],[343,287],[343,290],[343,296],[343,299],[343,304],[343,311],[343,316],[343,322],[343,323],[343,331],[343,337],[343,340],[343,345],[344,302],[344,325],[345,283],[345,286],[345,294],[345,296],[345,297],[345,300],[345,304],[345,306],[345,307],[345,310],[345,316],[345,321],[345,322],[345,337],[345,340],[346,308],[346,340],[347,308],[347,346],[348,283],[348,303],[348,304],[348,305],[348,314],[348,326],[348,327],[348,335],[348,340],[348,342],[348,345],[348,346],[349,283],[349,304],[349,316],[349,322],[349,337],[349,340],[349,341],[350,351],[351,352],[351,353],[352,353],[356,357],[357,358],[357,359],[357,360],[357,361],[358,360],[361,360],[362,363],[362,364],[362,366],[362,368],[362,369],[362,371],[362,372],[362,373],[362,377],[362,389],[362,391],[362,395],[363,373],[363,387],[363,395],[363,396],[365,363],[365,364],[365,371],[365,373],[367,363],[367,364],[367,366],[367,369],[367,373],[367,385],[367,386],[367,387],[367,389],[367,390],[367,392],[367,393],[367,394],[367,395],[367,396],[367,397],[367,398],[368,363],[368,364],[368,365],[368,367],[368,369],[368,373],[368,387],[368,388],[368,389],[368,391],[368,393],[368,395],[368,396],[368,397],[369,367],[369,368],[369,373],[369,391],[371,370],[372,364],[372,365],[372,367],[372,368],[372,369],[372,373],[372,387],[372,388],[372,391],[372,395],[372,396],[373,363],[373,364],[373,367],[373,368],[373,369],[373,386],[373,390],[373,391],[375,386],[376,367],[376,368],[376,369],[376,372],[376,396],[377,368],[377,378],[378,363],[378,367],[378,369],[378,373],[378,380],[378,381],[378,382],[378,387],[378,395],[378,396],[380,381],[380,382],[381,363],[382,363],[382,369],[382,373],[382,380],[382,381],[382,391],[383,367],[383,368],[383,384],[383,386],[383,392],[384,363],[384,364],[384,367],[384,369],[384,373],[386,387],[386,389],[386,390],[386,391],[386,392],[386,395],[386,396],[386,398],[387,363],[387,369],[387,395],[388,367],[388,396],[389,369],[389,397],[390,369],[391,368],[391,369],[391,373],[391,397],[392,369],[392,394],[392,396],[393,392],[394,369],[394,392],[395,369],[396,369],[396,397]],"groups":[{"name":"_vendor","count":249},{"name":"_internal","count":147},{"name":"(root)","count":3}],"langs":[{"name":"Python","files":398,"loc":115998},{"name":"JavaScript","files":1,"loc":104}],"startHere":[{"i":110,"why":"imported by 7 files"},{"i":67,"why":"imported by 2 files"},{"i":61,"why":"imported by 3 files"},{"i":63,"why":"imported by 1 file"},{"i":64,"why":"imported by 2 files"},{"i":112,"why":"imported by 3 files"},{"i":62,"why":"entry point, reaches 7 files"},{"i":114,"why":"entry point, reaches 5 files"},{"i":117,"why":"entry point, reaches 5 files"}],"cycles":[[273,282,294,296,297,299,301,303,304,305,306,307,308,310,312,314,316,318,319,321,322,323,324,326,327,334,335,336,337,338,339,340,341,342,343,345,346,347,348],[363,365,367,368,369,373,386,387,388,389,390,391,392,393,394,395,396],[248,249,251,254,255,257,258,263],[266,268,269,272],[111,112],[270,267],[380,382]],"externals":[["pip",200],["typing_extensions",19],["distutils",3],["_typeshed",3],["cryptography",3],["IPython",3],["OpenSSL",2],["backports",2],["compression",2],["keyring",1],["filelock",1],["redis",1]],"summary":{"files":399,"loc":116102,"links":671,"cycles":7,"shown":399,"truncated":false}};
+(function () {
+"use strict";
+const $ = (s) => document.querySelector(s);
+const nodes = D.nodes, edges = D.edges, N = nodes.length;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const base = (p) => p.slice(p.lastIndexOf("/") + 1);
+
+// ---------- data structures
+const outs = nodes.map(() => []), ins = nodes.map(() => []);
+for (const [s, t] of edges) { outs[s].push(t); ins[t].push(s); }
+
+const ROLES = {
+  entry:  { label: "Entry point", desc: "nothing imports it" },
+  hub:    { label: "Hub", desc: "imported by many files" },
+  module: { label: "Module", desc: "imports and is imported" },
+  leaf:   { label: "Leaf", desc: "imports nothing here" },
+  orphan: { label: "Isolated", desc: "not linked to anything" },
+};
+const ROLE_ORDER = ["entry", "hub", "module", "leaf", "orphan"];
+const ROLE_HUE = { entry: 145, hub: 24, module: 215, leaf: 275, orphan: 215 };
+
+// ---------- theme
+const darkMQ = matchMedia("(prefers-color-scheme: dark)");
+let C = {};
+function readColors() {
+  const s = getComputedStyle(document.documentElement);
+  const g = (n) => s.getPropertyValue(n).trim();
+  C = { bg: g("--bg"), ink: g("--ink"), mute: g("--mute"), edge: g("--edge"), inn: g("--in"), out: g("--out"), bad: g("--bad") };
+}
+const dark = () => darkMQ.matches;
+const hsl = (h, s, l) => `hsl(${Math.round(h)} ${s}% ${l}%)`;
+function groupColor(g) { return hsl((g * 137.508 + 18) % 360, 62, dark() ? 62 : 46); }
+function langColor(l) { return hsl((l * 83 + 210) % 360, 60, dark() ? 62 : 46); }
+function roleColor(r) {
+  if (r === "orphan") return dark() ? "hsl(215 10% 48%)" : "hsl(215 10% 62%)";
+  return hsl(ROLE_HUE[r], 68, dark() ? 60 : 47);
+}
+
+// ---------- state
+let mode = "group", showTests = true, showLabels = true, query = "";
+let sel = -1, hover = -1, cyc = -1;
+const hiddenGroups = new Set();
+let view = { x: 0, y: 0, k: 1 };
+let dirty = true;
+
+const maxRank = Math.max(0.0001, ...nodes.map((n) => n.k));
+const P = nodes.map((n) => ({ x: 0, y: 0, vx: 0, vy: 0, r: 3 + 11 * Math.sqrt(n.k / maxRank), fixed: false }));
+
+function colorOf(i) {
+  const n = nodes[i];
+  return mode === "group" ? groupColor(n.g) : mode === "lang" ? langColor(n.l) : roleColor(n.r);
+}
+const isVisible = (i) => (showTests || !nodes[i].t) && !hiddenGroups.has(nodes[i].g);
+
+// ---------- focus (what is dimmed)
+function relatedSet() {
+  const s = new Set([sel]);
+  for (const j of outs[sel]) s.add(j);
+  for (const j of ins[sel]) s.add(j);
+  return s;
+}
+let focus = null; // Set of lit nodes, or null when nothing is dimmed
+function computeFocus() {
+  const q = query.trim().toLowerCase();
+  if (q) { focus = new Set(); for (let i = 0; i < N; i++) if (nodes[i].p.toLowerCase().includes(q)) focus.add(i); }
+  else if (cyc >= 0) focus = new Set(D.cycles[cyc]);
+  else if (sel >= 0) focus = relatedSet();
+  else focus = null;
+  dirty = true;
+}
+
+// ---------- canvas
+const cv = $("#cv"), ctx = cv.getContext("2d");
+let dpr = 1, W = 0, H = 0;
+function resize() {
+  const r = cv.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  W = r.width; H = r.height;
+  cv.width = Math.max(1, Math.round(W * dpr)); cv.height = Math.max(1, Math.round(H * dpr));
+  dirty = true;
+}
+const toWorld = (sx, sy) => [(sx - view.x) / view.k, (sy - view.y) / view.k];
+
+function fitView(animate) {
+  if (!N) return;
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (let i = 0; i < N; i++) {
+    if (!isVisible(i)) continue;
+    const p = P[i];
+    x0 = Math.min(x0, p.x - p.r); y0 = Math.min(y0, p.y - p.r); x1 = Math.max(x1, p.x + p.r); y1 = Math.max(y1, p.y + p.r);
+  }
+  if (!isFinite(x0)) return;
+  const pad = 48, bw = Math.max(40, x1 - x0), bh = Math.max(40, y1 - y0);
+  const k = Math.min((W - pad * 2) / bw, (H - pad * 2) / bh, 1.8);
+  goTo({ k, x: W / 2 - ((x0 + x1) / 2) * k, y: H / 2 - ((y0 + y1) / 2) * k }, animate);
+}
+let anim = null;
+function goTo(target, animate) {
+  if (!animate) { view = target; dirty = true; return; }
+  anim = { from: { ...view }, to: target, t0: performance.now(), dur: 380 };
+}
+function stepAnim(now) {
+  if (!anim) return;
+  const t = Math.min(1, (now - anim.t0) / anim.dur), e = 1 - Math.pow(1 - t, 3);
+  view = { x: anim.from.x + (anim.to.x - anim.from.x) * e, y: anim.from.y + (anim.to.y - anim.from.y) * e, k: anim.from.k + (anim.to.k - anim.from.k) * e };
+  dirty = true;
+  if (t >= 1) anim = null;
+}
+
+// ---------- layout (force simulation, vanilla)
+const G = D.groups.length;
+const CELL = 70;
+let alpha = 1;
+function initLayout() {
+  const R0 = 38 * Math.sqrt(G) + 11 * Math.sqrt(N);
+  const anchors = D.groups.map((_, g) => {
+    const a = g * 2.399963, r = R0 * Math.sqrt((g + 0.5) / G);
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  });
+  const seen = new Array(G).fill(0);
+  nodes.forEach((n, i) => {
+    const [ax, ay] = anchors[n.g];
+    const j = seen[n.g]++, spread = 9 * Math.sqrt(D.groups[n.g].count) + 14;
+    const a = j * 2.399963, r = spread * Math.sqrt((j + 0.5) / D.groups[n.g].count);
+    P[i].x = ax + Math.cos(a) * r; P[i].y = ay + Math.sin(a) * r;
+  });
+}
+const deg = nodes.map((n) => Math.max(1, n.i + n.o));
+function tick() {
+  const grid = new Map();
+  for (let i = 0; i < N; i++) {
+    const p = P[i], key = Math.floor(p.x / CELL) * 100003 + Math.floor(p.y / CELL);
+    const cell = grid.get(key);
+    if (cell) cell.push(i); else grid.set(key, [i]);
+  }
+  for (let i = 0; i < N; i++) {
+    const p = P[i], cx = Math.floor(p.x / CELL), cy = Math.floor(p.y / CELL);
+    for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) {
+      const arr = grid.get((cx + dx) * 100003 + (cy + dy));
+      if (!arr) continue;
+      for (const j of arr) {
+        if (j <= i) continue;
+        const q = P[j];
+        let ddx = p.x - q.x, ddy = p.y - q.y, d2 = ddx * ddx + ddy * ddy;
+        if (d2 > CELL * CELL) continue;
+        if (d2 < 0.01) { ddx = Math.random() - 0.5; ddy = Math.random() - 0.5; d2 = ddx * ddx + ddy * ddy + 0.01; }
+        const d = Math.sqrt(d2), minD = p.r + q.r + 5;
+        let f = 380 / d2; if (d < minD) f += (minD - d) * 0.5;
+        f *= alpha;
+        const fx = (ddx / d) * f, fy = (ddy / d) * f;
+        p.vx += fx; p.vy += fy; q.vx -= fx; q.vy -= fy;
+      }
+    }
+  }
+  for (const [s, t] of edges) {
+    const a = P[s], b = P[t];
+    const dx = b.x - a.x, dy = b.y - a.y, d = Math.sqrt(dx * dx + dy * dy) || 0.01;
+    const L = 26 + a.r + b.r, k = (0.07 / Math.sqrt(Math.min(deg[s], deg[t]))) * alpha;
+    const f = (d - L) * k, fx = (dx / d) * f, fy = (dy / d) * f;
+    a.vx += fx; a.vy += fy; b.vx -= fx; b.vy -= fy;
+  }
+  const gx = new Float64Array(G), gy = new Float64Array(G), gc = new Float64Array(G);
+  for (let i = 0; i < N; i++) { const g = nodes[i].g; gx[g] += P[i].x; gy[g] += P[i].y; gc[g]++; }
+  for (let i = 0; i < N; i++) {
+    const p = P[i], g = nodes[i].g;
+    p.vx += (gx[g] / gc[g] - p.x) * 0.02 * alpha - p.x * 0.0035 * alpha;
+    p.vy += (gy[g] / gc[g] - p.y) * 0.02 * alpha - p.y * 0.0035 * alpha;
+    if (p.fixed) { p.vx = 0; p.vy = 0; continue; }
+    p.vx *= 0.8; p.vy *= 0.8;
+    const sp = Math.hypot(p.vx, p.vy); if (sp > 28) { p.vx *= 28 / sp; p.vy *= 28 / sp; }
+    p.x += p.vx; p.y += p.vy;
+  }
+  alpha *= 0.986;
+}
+
+// ---------- drawing
+function arrow(x0, y0, x1, y1, r1, size) {
+  const a = Math.atan2(y1 - y0, x1 - x0), tx = x1 - Math.cos(a) * (r1 + 1), ty = y1 - Math.sin(a) * (r1 + 1);
+  ctx.beginPath(); ctx.moveTo(tx, ty);
+  ctx.lineTo(tx - Math.cos(a - 0.45) * size, ty - Math.sin(a - 0.45) * size);
+  ctx.lineTo(tx - Math.cos(a + 0.45) * size, ty - Math.sin(a + 0.45) * size);
+  ctx.closePath(); ctx.fill();
+}
+function draw() {
+  dirty = false;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+  if (!N) return;
+  ctx.save(); ctx.translate(view.x, view.y); ctx.scale(view.k, view.k);
+  const k = view.k, lit = (i) => !focus || focus.has(i);
+  const vis = nodes.map((_, i) => isVisible(i));
+
+  // base edges, one batched path
+  ctx.strokeStyle = C.edge; ctx.lineWidth = 1 / k ** 0.35; ctx.globalAlpha = focus ? 0.35 : 1;
+  ctx.beginPath();
+  for (const [s, t] of edges) {
+    if (!vis[s] || !vis[t]) continue;
+    ctx.moveTo(P[s].x, P[s].y); ctx.lineTo(P[t].x, P[t].y);
+  }
+  ctx.stroke(); ctx.globalAlpha = 1;
+
+  // highlighted edges for the selected / hovered node
+  const hl = sel >= 0 ? sel : hover;
+  if (hl >= 0 && vis[hl]) {
+    ctx.lineWidth = 1.7 / k;
+    for (const [list, color, incoming] of [[outs[hl], C.out, false], [ins[hl], C.inn, true]]) {
+      ctx.strokeStyle = color; ctx.fillStyle = color;
+      for (const j of list) {
+        if (!vis[j]) continue;
+        const a = incoming ? P[j] : P[hl], b = incoming ? P[hl] : P[j];
+        ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+        arrow(a.x, a.y, b.x, b.y, b.r, 7 / k);
+      }
+    }
+  }
+
+  // nodes
+  for (let i = 0; i < N; i++) {
+    if (!vis[i]) continue;
+    const p = P[i], n = nodes[i], on = lit(i);
+    ctx.globalAlpha = on ? 1 : 0.13;
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+    ctx.fillStyle = colorOf(i); ctx.fill();
+    if (n.t) { ctx.lineWidth = 1.2 / k; ctx.strokeStyle = C.bg; ctx.stroke(); }
+    if (n.c >= 0 && on) { ctx.lineWidth = 1.3 / k; ctx.strokeStyle = C.bad; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 1.6 / k, 0, 6.2832); ctx.stroke(); }
+    if (i === sel || i === hover) { ctx.lineWidth = 2.4 / k; ctx.strokeStyle = C.ink; ctx.beginPath(); ctx.arc(p.x, p.y, p.r + 3 / k, 0, 6.2832); ctx.stroke(); }
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  if (showLabels) drawLabels(vis, lit);
+}
+function drawLabels(vis, lit) {
+  ctx.font = "600 11.5px " + getComputedStyle(document.body).fontFamily;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const cand = [];
+  for (let i = 0; i < N; i++) {
+    if (!vis[i]) continue;
+    const p = P[i], sx = p.x * view.k + view.x, sy = p.y * view.k + view.y;
+    if (sx < -40 || sy < -20 || sx > W + 40 || sy > H + 20) continue;
+    const forced = i === sel || i === hover || (sel >= 0 && focus && focus.has(i) && !query) || (query && focus && focus.has(i)) || (cyc >= 0 && focus && focus.has(i));
+    const rr = p.r * view.k;
+    const show = forced || (lit(i) && ((rr >= 11 && view.k > 0.3) || (view.k > 1.5 && rr >= 6.5) || (view.k > 2.6 && rr >= 4.2) || view.k > 4.2));
+    if (show) cand.push({ i, sx, sy, rr, w: i === sel || i === hover ? 3 : forced ? 2 : 1, score: p.r + (forced ? 100 : 0) });
+  }
+  cand.sort((a, b) => b.score - a.score);
+  const placed = [];
+  let count = 0;
+  for (const c of cand) {
+    if (count > 90) break;
+    const text = base(nodes[c.i].p), tw = ctx.measureText(text).width;
+    const box = [c.sx - tw / 2 - 3, c.sy + c.rr + 3, c.sx + tw / 2 + 3, c.sy + c.rr + 17];
+    if (c.w < 3 && placed.some((b) => box[0] < b[2] && box[2] > b[0] && box[1] < b[3] && box[3] > b[1])) continue;
+    placed.push(box); count++;
+    ctx.lineWidth = 4; ctx.strokeStyle = C.bg; ctx.lineJoin = "round";
+    ctx.strokeText(text, c.sx, c.sy + c.rr + 4);
+    ctx.fillStyle = C.ink; ctx.fillText(text, c.sx, c.sy + c.rr + 4);
+  }
+}
+
+// ---------- interaction
+function hit(sx, sy) {
+  const [wx, wy] = toWorld(sx, sy);
+  let best = -1, bd = Infinity;
+  for (let i = 0; i < N; i++) {
+    if (!isVisible(i)) continue;
+    const p = P[i], d = Math.hypot(p.x - wx, p.y - wy), lim = p.r + 4 / view.k;
+    if (d <= lim && d < bd) { bd = d; best = i; }
+  }
+  return best;
+}
+const tip = $("#tip");
+function showTip(i, sx, sy) {
+  const n = nodes[i];
+  tip.innerHTML = `<b>${esc(n.p)}</b><span>${n.n} lines · ${esc(D.langs[n.l].name)} · imported by ${n.i} · imports ${n.o}${n.c >= 0 ? " · in a cycle" : ""}</span>`;
+  tip.style.display = "block";
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  tip.style.left = Math.min(Math.max(8, sx + 14), W - w - 8) + "px";
+  tip.style.top = Math.min(Math.max(8, sy + 14), H - h - 8) + "px";
+}
+let drag = null;
+cv.addEventListener("pointerdown", (e) => {
+  cv.setPointerCapture(e.pointerId);
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const i = hit(sx, sy);
+  drag = { sx, sy, x0: view.x, y0: view.y, node: i, moved: false };
+  if (i >= 0) { P[i].fixed = true; }
+  cv.classList.add("drag"); anim = null;
+});
+cv.addEventListener("pointermove", (e) => {
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  if (drag) {
+    const dx = sx - drag.sx, dy = sy - drag.sy;
+    if (Math.hypot(dx, dy) > 4) drag.moved = true;
+    if (drag.node >= 0 && drag.moved) {
+      const [wx, wy] = toWorld(sx, sy); P[drag.node].x = wx; P[drag.node].y = wy; alpha = Math.max(alpha, 0.25);
+    } else if (drag.node < 0) { view.x = drag.x0 + dx; view.y = drag.y0 + dy; }
+    dirty = true; tip.style.display = "none"; return;
+  }
+  const i = hit(sx, sy);
+  if (i !== hover) { hover = i; dirty = true; cv.classList.toggle("pt", i >= 0); }
+  if (i >= 0) showTip(i, sx, sy); else tip.style.display = "none";
+});
+function endDrag() {
+  if (!drag) return;
+  if (drag.node >= 0) P[drag.node].fixed = false;
+  const click = !drag.moved, node = drag.node;
+  drag = null; cv.classList.remove("drag");
+  if (click) { if (node >= 0) select(node, false); else select(-1); }
+}
+cv.addEventListener("pointerup", endDrag);
+cv.addEventListener("pointercancel", endDrag);
+cv.addEventListener("pointerleave", () => { if (!drag) { hover = -1; tip.style.display = "none"; dirty = true; } });
+cv.addEventListener("wheel", (e) => {
+  e.preventDefault(); anim = null;
+  const r = cv.getBoundingClientRect(), sx = e.clientX - r.left, sy = e.clientY - r.top;
+  const f = Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)), k = Math.min(14, Math.max(0.04, view.k * f));
+  const [wx, wy] = toWorld(sx, sy);
+  view = { k, x: sx - wx * k, y: sy - wy * k }; dirty = true;
+}, { passive: false });
+
+// ---------- sidebar
+const listItem = (i, extra) => `<li><button class="item" data-i="${i}"><span class="sw" style="background:${colorOf(i)}"></span><span class="mono">${esc(nodes[i].p)}</span>${extra ? `<span class="sub">${esc(extra)}</span>` : ""}</button></li>`;
+function bindItems(root) {
+  root.querySelectorAll("button.item[data-i]").forEach((b) => b.addEventListener("click", () => select(+b.dataset.i, true)));
+}
+function renderStatic() {
+  $("#name").textContent = D.name;
+  const s = D.summary;
+  $("#stats").textContent = `${s.files.toLocaleString()} files · ${s.loc.toLocaleString()} lines · ${s.links.toLocaleString()} links`;
+  if (s.truncated) {
+    const note = $("#note"); note.hidden = false;
+    note.textContent = s.shown < s.files ? `Showing the ${s.shown.toLocaleString()} most connected of ${s.files.toLocaleString()} files.` : "Some files were skipped because the repo is very large.";
+  }
+  if (D.startHere.length) {
+    $("#startSec").hidden = false;
+    $("#start").innerHTML = D.startHere.map((x) => listItem(x.i, x.why)).join("");
+    bindItems($("#start"));
+  }
+  if (D.cycles.length) {
+    $("#cycSec").hidden = false;
+    $("#cyc").innerHTML = D.cycles.map((c, ci) => `<li><button class="item" data-c="${ci}"><span class="sw" style="background:var(--bad)"></span><span class="mono">${esc(c.slice(0, 3).map((i) => base(nodes[i].p)).join(" ↔ "))}${c.length > 3 ? ` +${c.length - 3}` : ""}</span><span class="sub">${c.length} files</span></button></li>`).join("");
+    $("#cyc").querySelectorAll("button.item").forEach((b) => b.addEventListener("click", () => toggleCycle(+b.dataset.c)));
+  }
+  if (D.externals.length) {
+    $("#extSec").hidden = false;
+    $("#ext").innerHTML = D.externals.map(([n, c]) => `<span class="chip">${esc(n)} · ${c}</span>`).join("");
+  }
+}
+function renderLegend() {
+  const ul = $("#legend");
+  let items = [];
+  if (mode === "group") {
+    $("#legendTitle").textContent = "Folders";
+    items = D.groups.slice(0, 40).map((g, gi) => ({ key: gi, color: groupColor(gi), label: g.name, count: g.count, hidable: true }));
+  } else if (mode === "lang") {
+    $("#legendTitle").textContent = "Languages";
+    items = D.langs.map((l, li) => ({ key: li, color: langColor(li), label: l.name, count: l.files }));
+  } else {
+    $("#legendTitle").textContent = "Roles";
+    const cnt = {}; nodes.forEach((n) => { cnt[n.r] = (cnt[n.r] || 0) + 1; });
+    items = ROLE_ORDER.filter((r) => cnt[r]).map((r) => ({ key: r, color: roleColor(r), label: ROLES[r].label, count: cnt[r], desc: ROLES[r].desc }));
+  }
+  ul.innerHTML = items.map((it) => `<li><button class="item" ${it.hidable ? `data-g="${it.key}" aria-pressed="${!hiddenGroups.has(it.key)}"` : ""} ${it.desc ? `title="${esc(it.desc)}"` : ""}><span class="sw" style="background:${it.color}"></span><span class="mono">${esc(it.label)}</span>${it.desc ? `<span class="sub">${esc(it.desc)}</span>` : ""}<span class="count">${it.count}</span></button></li>`).join("");
+  ul.querySelectorAll("button[data-g]").forEach((b) => b.addEventListener("click", () => {
+    const g = +b.dataset.g; if (hiddenGroups.has(g)) hiddenGroups.delete(g); else hiddenGroups.add(g);
+    b.setAttribute("aria-pressed", String(!hiddenGroups.has(g))); dirty = true;
+  }));
+}
+function renderDetail() {
+  const box = $("#detail");
+  if (sel < 0) { box.hidden = true; return; }
+  const n = nodes[sel];
+  const cap = (list, id) => {
+    const shown = list.slice(0, 40);
+    return shown.map((i) => listItem(i)).join("") + (list.length > 40 ? `<li><span class="sub">+${list.length - 40} more</span></li>` : "");
+  };
+  const sortByName = (a) => a.slice().sort((x, y) => nodes[x].p.localeCompare(nodes[y].p));
+  box.hidden = false;
+  box.innerHTML = `<button class="close" aria-label="Close details" id="closeDetail">×</button><h3>${esc(base(n.p))}</h3><div class="path">${esc(n.p)}</div>
+    <div><span class="chip">${esc(D.langs[n.l].name)}</span><span class="chip">${n.n.toLocaleString()} lines</span><span class="chip" title="${esc(ROLES[n.r].desc)}">${ROLES[n.r].label}</span>${n.t ? '<span class="chip">test</span>' : ""}${n.c >= 0 ? '<span class="chip bad">in a circular import</span>' : ""}</div>
+    ${outs[sel].length ? `<h2 style="margin-top:14px"><span style="color:var(--out)">→</span> Imports (${outs[sel].length})</h2><ul>${cap(sortByName(outs[sel]))}</ul>` : ""}
+    ${ins[sel].length ? `<h2 style="margin-top:14px"><span style="color:var(--in)">←</span> Imported by (${ins[sel].length})</h2><ul>${cap(sortByName(ins[sel]))}</ul>` : ""}
+    ${n.x.length ? `<h2 style="margin-top:14px">Uses packages</h2><div>${n.x.map((x) => `<span class="chip">${esc(x)}</span>`).join("")}</div>` : ""}`;
+  bindItems(box);
+  $("#closeDetail").addEventListener("click", () => select(-1));
+}
+
+// ---------- actions
+function select(i, center) {
+  sel = i; cyc = -1;
+  if (i >= 0 && !isVisible(i)) { hiddenGroups.delete(nodes[i].g); showTests = true; $("#tests").checked = true; renderLegend(); }
+  computeFocus(); renderDetail();
+  if (i >= 0 && center) {
+    const k = Math.max(view.k, 1.1), p = P[i];
+    goTo({ k, x: W / 2 - p.x * k, y: H / 2 - p.y * k }, true);
+  }
+  if (i >= 0) $("#detail").scrollIntoView({ block: "nearest" });
+}
+function toggleCycle(ci) {
+  cyc = cyc === ci ? -1 : ci; sel = -1; query = ""; $("#q").value = "";
+  computeFocus(); renderDetail();
+  if (cyc >= 0) {
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const i of D.cycles[cyc]) { const p = P[i]; x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); }
+    const k = Math.min((W - 160) / Math.max(60, x1 - x0), (H - 160) / Math.max(60, y1 - y0), 3);
+    goTo({ k, x: W / 2 - ((x0 + x1) / 2) * k, y: H / 2 - ((y0 + y1) / 2) * k }, true);
+  }
+}
+$("#modes").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-m]"); if (!b) return;
+  mode = b.dataset.m;
+  document.querySelectorAll("#modes button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  renderLegend(); renderStatic.lists(); dirty = true;
+});
+renderStatic.lists = function () { // colour dots in lists depend on the mode
+  if (D.startHere.length) { $("#start").innerHTML = D.startHere.map((x) => listItem(x.i, x.why)).join(""); bindItems($("#start")); }
+  renderDetail();
+};
+$("#tests").addEventListener("change", (e) => { showTests = e.target.checked; dirty = true; });
+$("#labels").addEventListener("change", (e) => { showLabels = e.target.checked; dirty = true; });
+$("#q").addEventListener("input", (e) => { query = e.target.value; if (query) { cyc = -1; } computeFocus(); });
+$("#q").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && focus && focus.size) {
+    const first = [...focus].sort((a, b) => nodes[a].p.length - nodes[b].p.length)[0];
+    query = ""; select(first, true); e.target.value = ""; e.target.blur();
+  }
+});
+$("#save").addEventListener("click", () => {
+  draw();
+  cv.toBlob((b) => { const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = (D.name || "repo") + "-atlas.png"; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000); });
+});
+addEventListener("keydown", (e) => {
+  if (e.key === "/" && document.activeElement !== $("#q")) { e.preventDefault(); $("#q").focus(); }
+  else if (e.key === "Escape") { query = ""; $("#q").value = ""; cyc = -1; select(-1); $("#q").blur(); }
+  else if (e.key === "0" && document.activeElement.tagName !== "INPUT") fitView(true);
+});
+addEventListener("resize", () => { resize(); });
+darkMQ.addEventListener && darkMQ.addEventListener("change", () => { readColors(); renderLegend(); renderStatic.lists(); dirty = true; });
+
+// ---------- boot
+readColors(); resize(); renderStatic(); renderLegend();
+if (!N) { $("#empty").style.display = "flex"; }
+else {
+  initLayout();
+  for (let i = 0; i < 160 && alpha > 0.03; i++) tick();
+  fitView(false);
+}
+function frame(now) {
+  stepAnim(now);
+  if (N && alpha > 0.012) { const steps = N > 900 ? 2 : 3; for (let i = 0; i < steps; i++) tick(); dirty = true; if (alpha <= 0.012) window.__atlasSettled = true; }
+  else window.__atlasSettled = true;
+  if (dirty) draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__atlas = { select, fitView, get alpha() { return alpha; } };
+})();
+</script>
+</body>
+</html>
