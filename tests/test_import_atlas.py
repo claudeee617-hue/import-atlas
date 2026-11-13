@@ -187,8 +187,12 @@ class GraphTests(unittest.TestCase):
 
 class RenderTests(unittest.TestCase):
     def test_html_is_self_contained_and_safe(self):
-        root = make_repo({"</script><b>.py": "", "ok.py": "import os\n"})
-        html_text = render_html(build_graph(scan(root)))
+        # A real file called "</script><b>.py" cannot exist on Windows ("<", ">" are invalid in
+        # names), so inject the hostile path into the payload instead of the file system.
+        root = make_repo({"ok.py": "import os\n"})
+        payload = build_graph(scan(root))
+        payload["nodes"][0]["p"] = "</script><b>.py"
+        html_text = render_html(payload)
         self.assertEqual(html_text.count("</script>"), 1)  # only the real closing tag
         self.assertNotIn("__ATLAS_DATA__", html_text)
         self.assertNotIn("__TITLE__", html_text)
